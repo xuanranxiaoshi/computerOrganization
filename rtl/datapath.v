@@ -24,7 +24,7 @@ module datapath(
 input wire clk,rst,
 input wire [31:0] Inst,                                     //指令信号
 input wire [31:0] mem_data,                                 //数据储存器读出数据
-input wire jump,regwriteM,regwriteW,regwriteE,regdst,alusrc,branch,memtoregE,memtoregW,memtoregM,
+input wire jump,regwriteM,regwriteW,regwriteE,regdst,alusrc,branch,branchE,branchM,memtoregE,memtoregW,memtoregM,
 input wire [2:0] Alucontrol,                                //控制信号
 output wire [31:0] alu_result_Me,	                        //alu运算结果
 output wire [31:0] WriteData_Me,	                        //数据储存器写入数据
@@ -54,7 +54,7 @@ wire [31:0] pc_jump;                                        //jump 指令跳转p
 
 
 //流水线cpu  
-wire [31:0] pc_plus4_De,pc_plus4_Ex;                           //流水线中传输的pc+4
+wire [31:0] pc_plus4_De,pc_plus4_Ex,pc_plus4_Me;                           //流水线中传输的pc+4
 wire [31:0] rd1_Ex,rd2_Ex;                                     //执行阶段保存的寄存器读出的数据       
 //wire [4:0]  rs_De,rs_Ex,rt_De,rt_Ex,,rd_De,rd_Ex;              //执行阶段保存目标寄存器序号信号
 wire [4:0] rs_De, rs_Ex, rt_De, rt_Ex, rd_De, rd_Ex;
@@ -66,14 +66,15 @@ wire [4:0] wa3_Ex,wa3_Me,wa3_Wb;
 wire [1:0] forwardAE,forwardBE;                                //数据前推选择器控制信号
 wire [31:0] rd1,rd2;                                           //实行前推后寄存器读取出的数据
 
-wire stallF,stallD,flushE;                                     //流水线暂停刷新控制信号
-wire forwardAD,forwardBD;                                      //分支判断提前产生的数据冒险控制信号
+wire stallF,stallD;
+wire flushF,flushD;                                                //流水线暂停刷新控制信号
+// wire forwardAD,forwardBD;                                      //分支判断提前产生的数据冒险控制信号
+// wire [31:0] srcaD,srcbD;                                       //分支判断来源
+// wire equalD;                                                   //是否相等
 
-wire [31:0] srcaD,srcbD;                                       //分支判断来源
-wire equalD;                                                   //是否相等
-
-
-
+wire pred_take,pred_takeE,pred_takeM;                              // 分支预测预测的预测结果
+wire branch_takeE,branch_takeM;                                    // 访存阶段计算得到此前分支指令是否跳转的结果
+wire predict_wrong;                                                // 分支指令是否预测错误
 
 //mux2 for pc_branch_next
 mux2 #(32) mux_pc(
@@ -100,7 +101,10 @@ mux2 #(32) mux_pc_jump(
 .y(pc_next)
 );
 
-
+/**
+这里PC的值在分支错误的时候应该怎么处理呢？
+应该不用单独处理，下一个周期的正确值将覆盖错误的值
+**/
 // pc
 pc pc(
 .clk(clk),
@@ -118,15 +122,14 @@ adder pc_plus4_4(
 );
 
 
-//the Flop for Decode stage 
-flopenrc #(32) r1  (.clk(clk),.rst(rst),.en(~stallD),.clear(1'b0),.d(Inst),.q(Inst_De));
-flopenrc #(32) r2  (.clk(clk),.rst(rst),.en(~stallD),.clear(1'b0),.d(pc_plus4),.q(pc_plus4_De));
+// the Flop for Decode stage 
+flopenrc #(32) r1  (.clk(clk),.rst(rst),.en(~stallD),.clear(flushD),.d(Inst),.q(Inst_De));
+flopenrc #(32) r2  (.clk(clk),.rst(rst),.en(~stallD),.clear(flushD),.d(pc_plus4),.q(pc_plus4_De));
 
 
 
 
-//  regfile
-
+//regfile
 regfile regfile(
 .clk(clk),
 .we3(regwriteW),                        //regwrite                 
@@ -140,7 +143,10 @@ regfile regfile(
 
 
 //pcsrcD
-assign pcsrc = equalD & branch;
+// assign pcsrc = equalD & branch;
+// 即相当于equalD的计算结果被预测结果直接替代，同时在执行阶段进行计算
+assign pcsrc = pred_takeD & branch;
+
 
 //segnext
 
@@ -165,10 +171,13 @@ adder pc_branch_m(
 
 
 //mux2 for srcaD
-mux2 #(32) forwardamux(.a(alu_result_Me),.b(rd1_De),.s(forwardAD),.y(srcaD));
-mux2 #(32) forwardbmux(.a(alu_result_Me),.b(rd2_De),.s(forwardBD),.y(srcbD));
+//mux2 #(32) forwardamux(.a(alu_result_Me),.b(rd1_De),.s(forwardAD),.y(srcaD));
+//mux2 #(32) forwardbmux(.a(alu_result_Me),.b(rd2_De),.s(forwardBD),.y(srcbD));
 
-eqcmp cmp (.a(srcaD),.b(srcbD),.y(equalD));
+// 取消译码阶段的比较器
+//eqcmp cmp (.a(srcaD),.b(srcbD),.y(equalD));
+
+//这里取消之后应对pc的更新进行修改
 
 
 assign rt_De = Inst_De[20:16];
@@ -183,6 +192,7 @@ flopenrc #(5) r24  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(rd_De),.q(rd
 flopenrc #(5) r27  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(rs_De),.q(rs_Ex));
 flopenrc #(32) r25  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pc_plus4_De),.q(pc_plus4_Ex));   //pc+4 执行阶段
 flopenrc #(32) r26  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(imm_extend),.q(imm_extend_Ex));  //立即数拓展
+flopenrc #(1) r28  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pred_take),.q(pred_takeE));       //预测结果
 
 
 //mux3 for SrcAe
@@ -223,6 +233,8 @@ ALU alu(
 .overflow()                         //暂时不考虑
 );
 
+assign branch_takeE = zero & branchE;
+
 
 
 
@@ -241,6 +253,17 @@ flopenrc #(32) r31  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(alu_result),.
 flopenrc #(1)  r32  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(zero),.q(zero_Me));                          //Alu zero 数据
 flopenrc #(32) r33  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(rd2),.q(WriteData_Me));
 flopenrc #(5)  r35  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(wa3_Ex),.q(wa3_Me));                         //目标寄存器序号存储
+flopenrc #(32) r36  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(pc_plus4_Ex),.q(pc_plus4_Me));             //pc+4 访存阶段
+flopenrc #(1) r34  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(branch_takeE),.q(branch_takeM));            //将执行阶段计算得到跳转结果传入下一级
+flopenrc #(1) r37  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(pred_takeE),.q(pred_takeM));                //预测结果
+
+/**
+在访存阶段，对分支预测结果进行检验修正
+判断是否出现错误，将结果传入harzard模块；
+预测错误还需要将正确的PC 返回取指阶段：
+**/
+assign predict_wrong = ~(pred_takeM^branch_takeM);
+
 
 
 // the Flop for WriteBack stage 
@@ -277,11 +300,32 @@ hazard Hazard(
 .forwardBE(forwardBE),
 .stallF(stallF),
 .stallD(stallD),
-.branchD(branch),
+.flushD(flushD),
 .flushE(flushE),
-.forwardAD(forwardAD),
-.forwardBD(forwardBD)
+.predict_wrong(predict_wrong)
+//.forwardAD(forwardAD),
+//.forwardBD(forwardBD)
     );
+
+
+/**
+原来的分支预测是将数据前推到译码阶段判断分支方向和获得跳转地址，采用分支预测则不用在译码阶段获得准确的结果，所以需要进行一下方面的改进：
+1. 取消前推的旁路
+2. 取消译码阶段的比较器
+3. 在执行阶段判断跳转的结果--> 引入执行阶段branch信号
+4. 修改预测错误的刷新措施 --> 需要分类讨论正确的地址
+        如果应该跳转，但是没跳转：分支指令的地址需要从执行阶段保存下来
+        如果不应该跳却跳了，正确地址直接是PC+8(!考虑延迟槽指令)
+   
+**/
+
+// 添加分支预测模块
+branch_predict bp( .clk(clk),.rst(rst),.flushD(flushD),.stallD(stallD),
+                   .pcF(pc_plus4),.pcM(pc_plus4_Me),.branchM(branchM),
+                   .actual_takeM(branch_takeM),
+                   .pred_takeD(pred_takeD)
+);
+
 
 
 

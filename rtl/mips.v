@@ -36,7 +36,7 @@ module mips(
 	// output wire [31:0] rd1,rd2,imm_extend,alu_srcB,pc_branch,pc_jump,pc_plus4,pc_branch_next,imm_sl2
     );
 
-	wire jump,regwriteM,regwriteW,regwriteE,regdst,alusrc,branch,memtoregW,memtoregE,memtoregM;
+	wire jump,regwriteM,regwriteW,regwriteE,regdst,alusrc,branch,branchE,branchM,memtoregW,memtoregE,memtoregM;
 	wire [2:0] Alucontrol;
 	wire [31:0] Inst_De;
 
@@ -54,6 +54,8 @@ module mips(
 		.regdst(regdst),
 		.alusrc(alusrc),
 		.branch(branch),
+		.branchM(branchM),
+		.branchE(branchE),
 		.memWrite(data_ram_wea),
 		.memtoregW(memtoregW),
 		.memtoregM(memtoregM),
@@ -82,6 +84,8 @@ module mips(
 		.regdst(regdst),
 		.alusrc(alusrc),
 		.branch(branch),
+		.branchE(branchE),
+		.branchM(branchM),
 		.memtoregW(memtoregW),
 		.memtoregE(memtoregE),
 		.memtoregM(memtoregM),
