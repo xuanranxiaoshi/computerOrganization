@@ -1,0 +1,17 @@
+#-----------------------------------------------------------
+# Vivado v2019.1 (64-bit)
+# SW Build 2552052 on Fri May 24 14:49:42 MDT 2019
+# IP Build 2548770 on Fri May 24 18:01:18 MDT 2019
+# Start of session at: Thu Jun 17 18:52:15 2021
+# Process ID: 16800
+# Current directory: D:/code/PCC/lab_4/project_1
+# Command line: vivado.exe -gui_launcher_event rodinguilauncherevent12984 D:\code\PCC\lab_4\project_1\project_1.xpr
+# Log file: D:/code/PCC/lab_4/project_1/vivado.log
+# Journal file: D:/code/PCC/lab_4/project_1\vivado.jou
+#-----------------------------------------------------------
+start_gui
+open_project D:/code/PCC/lab_4/project_1/project_1.xpr
+update_compile_order -fileset sources_1
+launch_simulation
+source testbench.tcl
+close_sim

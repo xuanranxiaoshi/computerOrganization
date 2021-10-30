@@ -1,0 +1,28 @@
+# compile verilog/system verilog design source files
+verilog xil_defaultlib  \
+"../../../../project_1.srcs/sources_1/ip/data_ram/sim/data_ram.v" \
+"../../../../project_1.srcs/sources_1/ip/inst_ram/sim/inst_ram.v" \
+"../../../../rtl/ALU.v" \
+"../../../../rtl/ALU_control.v" \
+"../../../../rtl/Main_Decoder.v" \
+"../../../../rtl/adder.v" \
+"../../../../rtl/controller.v" \
+"../../../../rtl/datapath.v" \
+"../../../../rtl/eqcmp.v" \
+"../../../../rtl/flopenrc.v" \
+"../../../../rtl/hazard.v" \
+"../../../../rtl/mips.v" \
+"../../../../rtl/mux2.v" \
+"../../../../rtl/mux3.v" \
+"../../../../rtl/pc.v" \
+"../../../../rtl/regfile.v" \
+"../../../../rtl/signext.v" \
+"../../../../rtl/sl2.v" \
+"../../../../rtl/top.v" \
+"../../../../rtl/testbench.v" \
+
+# compile glbl module
+verilog xil_defaultlib "glbl.v"
+
+# Do not sort compile order
+nosort

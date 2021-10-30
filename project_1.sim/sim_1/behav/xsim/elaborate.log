@@ -1,0 +1,45 @@
+Vivado Simulator 2019.2
+Copyright 1986-1999, 2001-2019 Xilinx, Inc. All Rights Reserved.
+Running: D:/codingsoft/vivado/Vivado/2019.2/bin/unwrapped/win64.o/xelab.exe -wto baba0b73a5f44bcb92460db1ac4d52fb --incr --debug typical --relax --mt 2 -L blk_mem_gen_v8_4_4 -L xil_defaultlib -L unisims_ver -L unimacro_ver -L secureip -L xpm --snapshot testbench_behav xil_defaultlib.testbench xil_defaultlib.glbl -log elaborate.log 
+Using 2 slave threads.
+Starting static elaboration
+Pass Through NonSizing Optimizer
+Completed static elaboration
+Starting simulation data flow analysis
+Completed simulation data flow analysis
+Time Resolution for simulation is 1ps
+Compiling module xil_defaultlib.Main_Decoder
+Compiling module xil_defaultlib.ALU_control
+Compiling module xil_defaultlib.flopenrc(WIDTH=7)
+Compiling module xil_defaultlib.flopenrc(WIDTH=3)
+Compiling module xil_defaultlib.flopenrc(WIDTH=5)
+Compiling module xil_defaultlib.flopenrc(WIDTH=2)
+Compiling module xil_defaultlib.controller
+Compiling module xil_defaultlib.mux2
+Compiling module xil_defaultlib.sl2
+Compiling module xil_defaultlib.pc
+Compiling module xil_defaultlib.adder
+Compiling module xil_defaultlib.flopenrc(WIDTH=32)
+Compiling module xil_defaultlib.regfile
+Compiling module xil_defaultlib.signext
+Compiling module xil_defaultlib.eqcmp
+Compiling module xil_defaultlib.mux3(WIDTH=32)
+Compiling module xil_defaultlib.ALU
+Compiling module xil_defaultlib.mux2(WIDTH=5)
+Compiling module xil_defaultlib.flopenrc(WIDTH=1)
+Compiling module xil_defaultlib.hazard
+Compiling module xil_defaultlib.datapath
+Compiling module xil_defaultlib.mips
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4_output_stage(...
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4_output_stage(...
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4_softecc_outpu...
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4_mem_module(C_...
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4(C_FAMILY="art...
+Compiling module xil_defaultlib.inst_ram
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4_mem_module(C_...
+Compiling module blk_mem_gen_v8_4_4.blk_mem_gen_v8_4_4(C_FAMILY="art...
+Compiling module xil_defaultlib.data_ram
+Compiling module xil_defaultlib.top
+Compiling module xil_defaultlib.testbench
+Compiling module xil_defaultlib.glbl
+Built simulation snapshot testbench_behav
