@@ -6,9 +6,9 @@ verilog xil_defaultlib  \
 "../../../../rtl/ALU_control.v" \
 "../../../../rtl/Main_Decoder.v" \
 "../../../../rtl/adder.v" \
+"../../../../rtl/branch_predict.v" \
 "../../../../rtl/controller.v" \
 "../../../../rtl/datapath.v" \
-"../../../../rtl/eqcmp.v" \
 "../../../../rtl/flopenrc.v" \
 "../../../../rtl/hazard.v" \
 "../../../../rtl/mips.v" \

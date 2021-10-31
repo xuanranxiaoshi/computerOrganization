@@ -52,6 +52,7 @@ wire zero;                                                  //alu运算结果是
 wire pcsrc;                                                 //分支指令pc控制信号
 wire [31:0] pc_jump;                                        //jump 指令跳转pc
 
+wire [31:0] pc_branchE,pc_branchM;                          // 分支跳转的地址在各个流水线级上的值
 
 //流水线cpu  
 wire [31:0] pc_plus4_De,pc_plus4_Ex,pc_plus4_Me;                           //流水线中传输的pc+4
@@ -67,14 +68,16 @@ wire [1:0] forwardAE,forwardBE;                                //数据前推选
 wire [31:0] rd1,rd2;                                           //实行前推后寄存器读取出的数据
 
 wire stallF,stallD;
-wire flushF,flushD;                                                //流水线暂停刷新控制信号
+wire flushD,flushE;                                                //流水线暂停刷新控制信号
 // wire forwardAD,forwardBD;                                      //分支判断提前产生的数据冒险控制信号
 // wire [31:0] srcaD,srcbD;                                       //分支判断来源
 // wire equalD;                                                   //是否相等
 
-wire pred_take,pred_takeE,pred_takeM;                              // 分支预测预测的预测结果
+wire pred_takeD,pred_takeE,pred_takeM;                              // 分支预测预测的预测结果
 wire branch_takeE,branch_takeM;                                    // 访存阶段计算得到此前分支指令是否跳转的结果
 wire predict_wrong;                                                // 分支指令是否预测错误
+wire [31:0] pc_next_correct;                                       // 分支预测矫正的PC值 
+wire [31:0] pc_next_common;                                        // 正常情况下pc的下一个值    
 
 //mux2 for pc_branch_next
 mux2 #(32) mux_pc(
@@ -98,8 +101,17 @@ mux2 #(32) mux_pc_jump(
 .a(pc_jump),                                                  //pc+4的高4加上，指令低26位左移两位
 .b(pc_branch_next),
 .s(jump),                           
+.y(pc_next_common)
+);
+
+// 这里需要再添加一个对矫正地址和正常地址的选择
+mux2 #(32) mux_pc_next(
+.a(pc_next_correct),                                                  //pc+4的高4加上，指令低26位左移两位
+.b(pc_next_common),
+.s(predict_wrong),                           
 .y(pc_next)
 );
+
 
 /**
 这里PC的值在分支错误的时候应该怎么处理呢？
@@ -192,7 +204,8 @@ flopenrc #(5) r24  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(rd_De),.q(rd
 flopenrc #(5) r27  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(rs_De),.q(rs_Ex));
 flopenrc #(32) r25  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pc_plus4_De),.q(pc_plus4_Ex));   //pc+4 执行阶段
 flopenrc #(32) r26  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(imm_extend),.q(imm_extend_Ex));  //立即数拓展
-flopenrc #(1) r28  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pred_take),.q(pred_takeE));       //预测结果
+flopenrc #(1) r28  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pred_takeD),.q(pred_takeE));       //预测结果
+flopenrc #(32) r29  (.clk(clk),.rst(rst),.en(1'b1),.clear(flushE),.d(pc_branch),.q(pc_branchE));      //执行阶段得到的分支指令传入
 
 
 //mux3 for SrcAe
@@ -233,6 +246,7 @@ ALU alu(
 .overflow()                         //暂时不考虑
 );
 
+// 在执行阶段计算正确的跳转信号
 assign branch_takeE = zero & branchE;
 
 
@@ -256,15 +270,33 @@ flopenrc #(5)  r35  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(wa3_Ex),.q(wa
 flopenrc #(32) r36  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(pc_plus4_Ex),.q(pc_plus4_Me));             //pc+4 访存阶段
 flopenrc #(1) r34  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(branch_takeE),.q(branch_takeM));            //将执行阶段计算得到跳转结果传入下一级
 flopenrc #(1) r37  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(pred_takeE),.q(pred_takeM));                //预测结果
+flopenrc #(32) r38  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(pc_branchE),.q(pc_branchM));               //分支跳转地址
 
 /**
 在访存阶段，对分支预测结果进行检验修正
-判断是否出现错误，将结果传入harzard模块；
-预测错误还需要将正确的PC 返回取指阶段：
+判断是否出现错误，将结果传入harzard模块，控制流水线的刷新和暂停
+PC值更新：
+    该跳但是没有跳的话，将pc_branch 传到取值阶段
+    不该跳转，却跳了，将pc+8(延迟槽的原因) 传到取值阶段
+实现方式：选择相应的地址，传入取值阶段，然后在取值阶段原有的部分再添加一个2选1选择器
+    
 **/
-assign predict_wrong = ~(pred_takeM^branch_takeM);
+assign predict_wrong = (pred_takeM^branch_takeM) & branchM ;
 
-
+// 先获得pc + 8
+wire [31:0] pc_plus_8;
+adder pc_plus8_8(
+.a(pc_plus4_Me),
+.b(32'd4),
+.y(pc_plus_8)
+);
+// 根据之前预测的结果选择纠正pc值
+mux2 #(32) mux_correct(
+.a(pc_plus_8),
+.b(pc_branchM),
+.s(pred_takeM),                         
+.y(pc_next_correct)
+);
 
 // the Flop for WriteBack stage 
 flopenrc #(32) r41  (.clk(clk),.rst(rst),.en(1'b1),.clear(1'b0),.d(alu_result_Me),.q(alu_result_Wb));
@@ -302,7 +334,7 @@ hazard Hazard(
 .stallD(stallD),
 .flushD(flushD),
 .flushE(flushE),
-.predict_wrong(predict_wrong)
+.predict_wrongM(predict_wrong)
 //.forwardAD(forwardAD),
 //.forwardBD(forwardBD)
     );
@@ -312,7 +344,7 @@ hazard Hazard(
 原来的分支预测是将数据前推到译码阶段判断分支方向和获得跳转地址，采用分支预测则不用在译码阶段获得准确的结果，所以需要进行一下方面的改进：
 1. 取消前推的旁路
 2. 取消译码阶段的比较器
-3. 在执行阶段判断跳转的结果--> 引入执行阶段branch信号
+3. 在执行阶段判断跳转的结果--> 引入执行阶段branch信号，利用zero信号，得到正确的跳转情况保存到下一个周期
 4. 修改预测错误的刷新措施 --> 需要分类讨论正确的地址
         如果应该跳转，但是没跳转：分支指令的地址需要从执行阶段保存下来
         如果不应该跳却跳了，正确地址直接是PC+8(!考虑延迟槽指令)
@@ -321,7 +353,7 @@ hazard Hazard(
 
 // 添加分支预测模块
 branch_predict bp( .clk(clk),.rst(rst),.flushD(flushD),.stallD(stallD),
-                   .pcF(pc_plus4),.pcM(pc_plus4_Me),.branchM(branchM),
+                   .pcF(pc_plus4),.pcM(pc_plus4_Me),.branchM(branchM),.branchD(branch),
                    .actual_takeM(branch_takeM),
                    .pred_takeD(pred_takeD)
 );

@@ -10,12 +10,13 @@ INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/Mai
 INFO: [VRFC 10-311] analyzing module Main_Decoder
 INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/adder.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module adder
+INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/branch_predict.v" into library xil_defaultlib
+INFO: [VRFC 10-311] analyzing module branch_predict
+INFO: [VRFC 10-2458] undeclared symbol update_BHT_value, assumed default net type wire [D:/code/PCC/lab_4/project_1/rtl/branch_predict.v:96]
 INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/controller.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module controller
 INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/datapath.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module datapath
-INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/eqcmp.v" into library xil_defaultlib
-INFO: [VRFC 10-311] analyzing module eqcmp
 INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/flopenrc.v" into library xil_defaultlib
 INFO: [VRFC 10-311] analyzing module flopenrc
 INFO: [VRFC 10-2263] Analyzing Verilog file "D:/code/PCC/lab_4/project_1/rtl/hazard.v" into library xil_defaultlib

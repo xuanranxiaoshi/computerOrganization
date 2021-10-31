@@ -24,7 +24,7 @@ module hazard(
     input wire [4:0] rsD,rtD,rsE,rtE,writeregM,writeregW,writeregE,       // 寄存器序号
     input wire regwriteM,regwriteW,regwriteE,                             // 寄存器写入信号
     input wire memtoregE,memtoregM,                                       // 内存数据写入寄存器控制信号
-    input wire predict_wrong,                                   // 分支预测是否正确
+    input wire predict_wrongM,                                   // 分支预测是否正确
     output wire [1:0] forwardAE,forwardBE,                      // 前推数据选择信号
     output wire stallF,stallD,flushD,flushE                          // 暂停刷新信号
     //output wire forwardAD,forwardBD                             // 提前分支判断产生的数据冒险数据前推控制信号
@@ -55,13 +55,18 @@ module hazard(
     assign stallD = lwstall | branch_stall;
     assign flushE = lwstall | branch_stall; */
     
-    assign branch_flush = predict_wrong;
+    assign branch_flush = predict_wrongM;
 
     //现在阻塞只会是因为内存访问
     assign stallF = lwstall;
     assign stallD = lwstall;
+    /**
+    这里如果分支判断错误，只对取值阶段和译码阶段流向下一级流水线的寄存器进行刷新；
+    在访存阶段得到判断结果，此时是有三条指令进入了流水线，因为有延迟槽机制，则只有两条是错误的，
+    所以只刷新两级
+    **/
     assign flushD = branch_flush;
-    assign fulshE = branch_flush;
+    assign flushE = branch_flush;
     
 
 endmodule
